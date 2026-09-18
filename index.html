@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Encry Chat</title>
+<style>
+:root{
+  --bg:#1a0b2e;
+  --bg2:#2d1b4e;
+  --panel:#241244;
+  --me:#f472b6;
+  --me2:#a855f7;
+  --ot:#2e1a4f;
+  --text:#fdf4ff;
+  --muted:#a78bca;
+  --accent:#f0abfc;
+  --line:#3d2666;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+#gate{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;background:radial-gradient(900px 500px at 15% 10%,#7c3aed 0%,transparent 60%),radial-gradient(800px 600px at 90% 90%,#ec4899 0%,transparent 55%),var(--bg)}
+#gate .logo{font-size:56px;margin-bottom:12px;filter:drop-shadow(0 4px 20px rgba(244,114,182,.5))}
+#gate h1{font-size:28px;letter-spacing:3px;margin-bottom:4px;font-weight:700;color:#fce7f3}
+#gate p{color:var(--muted);margin-bottom:30px;font-size:13px}
+#gate input{width:250px;padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font-size:15px;text-align:center;margin:5px 0;outline:none}
+#gate input::placeholder{color:var(--muted)}
+#gate button{width:250px;padding:13px;margin-top:12px;border:none;border-radius:14px;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;font-size:16px;font-weight:600;box-shadow:0 6px 20px rgba(244,114,182,.4)}
+
+#chat{display:none;flex-direction:column;height:100vh}
+.topbar{background:rgba(22,33,62,.95);backdrop-filter:blur(10px);padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.topbar .back{font-size:22px;color:var(--accent);width:22px}
+.topbar .ava{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f472b6,#a855f7);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(244,114,182,.4)}
+.topbar .info{flex:1;min-width:0}
+.topbar .nm{font-size:16px;font-weight:600}
+.topbar .st{font-size:11px;color:#4ade80}
+.topbar .off{color:var(--muted)!important}
+.topbar .pill{font-size:11px;padding:4px 10px;border-radius:20px}
+.topbar .sum{color:var(--accent);background:rgba(96,165,250,.12);cursor:pointer}
+.topbar .day{color:#fbbf24;background:rgba(251,191,36,.12)}
+.topbar .gear{color:var(--muted);background:rgba(255,255,255,.06);cursor:pointer;display:flex;align-items:center}
+
+#msgs{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column}
+.daymark{align-self:center;color:var(--muted);font-size:11px;margin:10px 0;padding:3px 12px;background:rgba(255,255,255,.05);border-radius:12px}
+.row{display:flex;margin-bottom:10px;align-items:flex-end;gap:8px;max-width:100%}
+.row.me{flex-direction:row-reverse}
+.row .av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--ot);flex-shrink:0}
+.row.me .av{background:linear-gradient(135deg,#3b82f6,#a855f7)}
+.b{max-width:72%;padding:10px 13px;border-radius:18px;font-size:15px;line-height:1.45;word-break:break-word;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.row.me .b{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-bottom-right-radius:5px}
+.row.ot .b{background:var(--ot);color:var(--text);border-bottom-left-radius:5px}
+.b .t{display:block;font-size:10px;opacity:.6;margin-top:4px;text-align:right}
+.row .b img{max-width:220px;border-radius:12px;display:block;margin:-4px}
+
+.voice{display:flex;align-items:center;gap:10px;min-width:140px}
+.voice .play{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.row.ot .voice .play{background:rgba(96,165,250,.2)}
+.voice .waves{display:flex;align-items:center;gap:2px;height:22px;flex:1}
+.voice .waves i{width:3px;background:currentColor;border-radius:2px;opacity:.7}
+.voice .dur{font-size:12px;opacity:.85;flex-shrink:0}
+.vt{font-size:13px;color:#e9d5ff;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.15)}
+.vtBtn{font-size:11px;color:#f0abfc;margin-top:4px;opacity:.8;text-decoration:underline}
+.voice.playing .waves i{animation:wv 0.9s ease-in-out infinite}
+@keyframes wv{0%,100%{height:6px}50%{height:20px}}
+
+.fileMsg{display:flex;align-items:center;gap:10px;min-width:140px}
+.fileMsg .fi{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px}
+.row.ot .fileMsg .fi{background:rgba(96,165,250,.15)}
+.fileMsg .fn{font-size:13px;flex:1;word-break:break-all}
+
+.bar{display:flex;align-items:flex-end;gap:8px;padding:8px 10px;background:rgba(22,33,62,.95);border-top:1px solid var(--line)}
+.bar .tool{width:38px;height:38px;border-radius:50%;border:none;background:transparent;color:var(--muted);font-size:19px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.bar .tool.rec{background:#ef4444;color:#fff;animation:pulse 1s infinite}
+.bar .tool.super-on{background:#fbbf24;color:#1e293b}
+#toolBar .tool.big{flex-direction:column;gap:4px;width:56px;height:60px;border-radius:16px;background:rgba(255,255,255,.05);font-size:11px;color:var(--muted)}
+#toolBar .tool.big span{font-size:11px}
+#toolBar .tool.big.super-on{background:#fbbf24;color:#1e293b}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.bar input{flex:1;min-width:0;border:none;border-radius:20px;padding:11px 15px;font-size:15px;background:rgba(255,255,255,.06);color:var(--text);outline:none}
+.bar .send{border:none;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;padding:11px 18px;border-radius:20px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(244,114,182,.3)}
+
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:flex-end;justify-content:center}
+#sheet{width:100%;max-width:480px;background:var(--panel);border-radius:20px 20px 0 0;padding:22px 18px 26px;max-height:82vh;overflow-y:auto;color:var(--text)}
+#sheet h2{font-size:18px;color:var(--accent)}
+#sheet .sub{color:var(--muted);font-size:12px;margin:4px 0 14px}
+#sheet .seg{display:flex;gap:6px;margin-bottom:14px}
+#sheet .seg button{flex:1;padding:8px 0;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:16px;font-size:13px}
+#sheet .seg button.on{background:var(--me);color:#fff;border-color:var(--me)}
+#bd{font-size:14px;line-height:1.75}
+#bd .stat{display:flex;gap:10px;margin:12px 0}
+#bd .stat div{flex:1;background:var(--bg);border-radius:12px;padding:12px;text-align:center}
+#bd .stat b{display:block;font-size:22px;color:var(--accent)}
+#bd .stat span{font-size:11px;color:var(--muted)}
+#bd .quote{background:rgba(251,191,36,.08);border-left:3px solid #fbbf24;padding:9px 12px;margin:10px 0;border-radius:6px}
+#close{margin-top:18px;width:100%;padding:12px;border:none;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;border-radius:22px;font-size:15px}
+#ovSet{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:210;display:none;align-items:flex-end;justify-content:center}
+.setItem{display:flex;align-items:center;justify-content:space-between;padding:14px 4px;border-bottom:1px solid var(--line)}
+.setItem .lbl{font-size:15px}
+.setItem .desc{font-size:11px;color:var(--muted);margin-top:2px}
+.sw{width:46px;height:26px;border-radius:13px;background:#334155;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s}
+.sw.on{background:#22c55e}
+.sw.on::after{left:23px}
+#ovAdmin{position:fixed;inset:0;background:var(--bg);z-index:300;display:none;flex-direction:column}
+#ovWatch{position:fixed;inset:0;background:var(--bg);z-index:350;display:none;flex-direction:column}
+#adminStats{display:flex;gap:10px;padding:12px 14px;flex-shrink:0}
+.statCard{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px 8px;text-align:center}
+.statCard .n{font-size:22px;font-weight:800;color:#f0abfc}
+.statCard .l{font-size:11px;color:var(--muted);margin-top:2px}
+#adminList{flex:1;overflow-y:auto;padding:0 14px 24px}
+.adminUser{display:flex;align-items:center;gap:10px;padding:12px 12px;margin-bottom:10px;background:var(--panel);border:1px solid var(--line);border-radius:18px}
+.adminUser .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f472b6,#a855f7);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:#fff}
+.adminUser .info{flex:1;min-width:0}
+.adminUser .nm{font-size:15px;display:flex;align-items:center;gap:5px}
+.adminUser .meta{font-size:11px;color:var(--muted);margin-top:2px}
+.adminUser .acts{display:flex;gap:6px;flex-shrink:0}
+.adminUser .acts button{font-size:12px;padding:6px 12px;border:none;border-radius:12px;color:#fff;font-weight:600}
+.adminUser .acts .w{background:linear-gradient(135deg,#8b5cf6,#a855f7)}
+.adminUser .acts .b{background:linear-gradient(135deg,#ef4444,#f97316)}
+.od{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.od.on{background:#22c55e;box-shadow:0 0 6px #22c55e}
+.od.off{background:#475569}
+.watchMsg{padding:8px 10px;margin:4px 0;border-radius:10px;font-size:13px;max-width:85%}
+.watchMe{background:#3b82f6;color:#fff;margin-left:auto}
+.watchOt{background:#1e293b;margin-right:auto}
+#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:500;opacity:0;transition:opacity .25s;pointer-events:none;max-width:80%;text-align:center}
+#dlg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:none;align-items:center;justify-content:center}
+#dlgBox{width:82%;max-width:320px;background:var(--panel);border-radius:18px;padding:22px 18px;color:var(--text)}
+#dlgTitle{font-size:16px;font-weight:600;margin-bottom:8px}
+#dlgMsg{font-size:14px;color:#cbd5e1;line-height:1.5;margin-bottom:16px}
+#dlgInput{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font-size:15px;margin-bottom:16px;outline:none;box-sizing:border-box}
+#dlgBtns{display:flex;gap:10px}
+#dlgBtns button{flex:1;padding:11px 0;border:none;border-radius:12px;font-size:14px;font-weight:600}
+#dlgCancel{background:rgba(255,255,255,.1);color:#cbd5e1}
+#dlgOk{background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff}
+.msgs-hidden #msgs .b{color:transparent!important;text-shadow:0 0 8px rgba(255,255,255,.5)}
+.msgs-hidden #msgs .b img{filter:grayscale(1) brightness(0)!important;background:#150f24;width:190px;height:130px;object-fit:none}
+.msgs-hidden #msgs .voice,.msgs-hidden #msgs .fileMsg{filter:grayscale(1) brightness(0)!important}
+#ovWatch .wTop{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+#watchMsgs{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column}
+#ovZoom{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;display:none;align-items:center;justify-content:center;flex-direction:column}
+#agreePage{position:fixed;inset:0;z-index:800;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#agreeBox{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px 20px;max-height:88vh;overflow-y:auto}
+#agreeBox h2{font-size:18px;color:#f0abfc;text-align:center;margin-bottom:4px}
+#agreeBox .ver{text-align:center;color:var(--muted);font-size:11px;margin-bottom:14px}
+#agreeBox .terms{font-size:13px;line-height:1.7;color:#d8c7e8}
+#agreeBox .terms b{color:#f472b6}
+#agreeBox .agreeRow{display:flex;align-items:center;gap:8px;margin:16px 0 12px;font-size:13px;color:#e9d5ff}
+#agreeBox .agreeRow input{width:18px;height:18px;accent-color:#f472b6;flex-shrink:0}
+#agreeBox .agreeBtns{display:flex;gap:10px}
+#agreeBox .agreeBtns button{flex:1;padding:12px 0;border:none;border-radius:14px;font-size:15px;font-weight:600}
+#agreeGo{background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff}
+#agreeExit{background:rgba(255,255,255,.08);color:#cbd5e1}
+</style>
+</head>
+<body>
+
+<div id="agreePage" style="display:none">
+  <div id="agreeBox">
+    <h2>📜 用户协议</h2>
+    <div class="ver">Encry Chat · 版本 1.0</div>
+    <div class="terms">
+      欢迎使用 Encry Chat。为了营造健康、友善的聊天氛围，请你遵守以下约定：<br><br>
+      1. 不讨论政治议题；<br>
+      2. 不参与、不传播任何违法犯罪活动；<br><br>
+      本软件聊天内容通过公共网络传输，请注意个人信息安全。
+    </div>
+    <label class="agreeRow"><input type="checkbox" id="agreeChk"> 我已阅读并同意以上协议</label>
+    <div class="agreeBtns">
+      <button id="agreeExit">不同意，退出</button>
+      <button id="agreeGo">同意并进入</button>
+    </div>
+  </div>
+</div>
+
+<div id="gate">
+  <div class="logo" id="gateLogo"><svg viewBox="0 0 100 100" width="72" height="72"><circle cx="50" cy="52" r="26" fill="#a855f7"/><ellipse cx="50" cy="52" rx="42" ry="12" fill="none" stroke="#f472b6" stroke-width="3.5" transform="rotate(-18 50 52)"/><circle cx="82" cy="36" r="5.5" fill="#f0abfc"/></svg></div>
+  <h1>Encry Chat</h1>
+  <p>真实宇宙</p>
+  <input id="roomInput" placeholder="房间号" maxlength="20">
+  <input id="roleInput" placeholder="我的名字" maxlength="20">
+  <button onclick="enter()">进入</button>
+  <div class="ver" id="curVer"></div>
+</div>
+
+<div id="chat">
+  <div class="topbar">
+    <span class="back" onclick="backToGate()">‹</span>
+    <div class="ava"><svg viewBox="0 0 100 100" width="40" height="40"><circle cx="50" cy="52" r="26" fill="#a855f7"/><ellipse cx="50" cy="52" rx="42" ry="12" fill="none" stroke="#f472b6" stroke-width="3.5" transform="rotate(-18 50 52)"/><circle cx="82" cy="36" r="5.5" fill="#f0abfc"/></svg></div>
+    <div class="info">
+      <div class="nm" id="partner">Encry</div>
+      <div class="st" id="conn">● 连接中…</div>
+    </div>
+    <span class="pill sum" onclick="openSummit()">总结</span>
+    <span class="pill gear" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </span>
+  </div>
+  <div id="msgs"></div>
+  <div id="toolBar" style="display:none;flex-direction:row;gap:10px;padding:10px 14px 6px;background:rgba(22,33,62,.95);border-top:1px solid var(--line)">
+    <button class="tool big" onclick="pickImage()"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>图片</span></button>
+    <button class="tool big" onclick="pickFile()"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg><span>文件</span></button>
+    <button class="tool big" id="recBtn" onclick="toggleRec()"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg><span>语音</span></button>
+    <button class="tool big" id="superBtn" onclick="toggleSuper()"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>超级</span></button>
+  </div>
+  <div class="bar">
+    <button class="tool" id="plusBtn" onclick="toggleTools()" aria-label="更多">
+      <svg id="plusIco" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <input id="input" placeholder="消息…" maxlength="500">
+    <button class="send" onclick="send()">发送</button>
+  </div>
+</div>
+
+<input type="file" id="imgPicker" accept="image/*" hidden>
+<input type="file" id="filePicker" hidden>
+
+<div id="ov">
+  <div id="sheet">
+    <h2>🪐 我们的小结</h2>
+    <div class="sub" id="summitRange"></div>
+    <div class="seg">
+      <button onclick="renderSummit('today',this)">今天</button>
+      <button onclick="renderSummit('week',this)">本周</button>
+      <button onclick="renderSummit('month',this)">本月</button>
+      <button onclick="renderSummit('all',this)">全部</button>
+    </div>
+    <div id="bd"></div>
+    <button id="close" onclick="closeSummit()">关闭</button>
+  </div>
+</div>
+
+<div id="ovSet">
+  <div id="sheet">
+    <h2>⚙️ 设置</h2>
+    <div class="sub">Encry Chat · 真实宇宙</div>
+    <div id="setList"></div>
+    <button id="close" onclick="closeSettings()">关闭</button>
+  </div>
+</div>
+
+<div id="ovAdmin">
+  <div class="wTop">
+    <span class="pill" style="color:#f0abfc;cursor:pointer" onclick="closeAdmin()">‹ 返回</span>
+    <div style="flex:1;text-align:center">
+      <div style="font-size:16px;font-weight:700">监管中心</div>
+      <div style="font-size:10px;color:var(--muted)">静默监听 · 仅管理员可见</div>
+    </div>
+    <span style="width:40px"></span>
+  </div>
+  <div style="padding:0 14px 4px">
+    <button id="killBtn" onclick="toggleKill()" style="width:100%;padding:13px 0;border:none;border-radius:16px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,#ef4444,#f97316);box-shadow:0 4px 14px rgba(239,68,68,.35)">停用当前版本</button>
+    <button id="aiBtn" onclick="toggleAI()" style="width:100%;padding:13px 0;border:none;border-radius:16px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,#8b5cf6,#06b6d4);box-shadow:0 4px 14px rgba(139,92,246,.35);margin-top:8px">AI 陪聊</button>
+  </div>
+  <div style="padding:0 14px 8px">
+    <button id="aiBtn" onclick="toggleAI()" style="width:100%;padding:13px 0;border:none;border-radius:16px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,#8b5cf6,#d946ef);box-shadow:0 4px 14px rgba(168,85,247,.35)">AI 对聊</button>
+  </div>
+  <div id="adminStats"></div>
+  <div id="adminList"></div>
+</div>
+
+<div id="ovWatch">
+  <div class="wTop">
+    <span class="pill" style="color:#f0abfc;cursor:pointer" onclick="closeWatch()">‹ 返回</span>
+    <div style="flex:1;text-align:center"><div id="watchTitle" style="font-size:15px;font-weight:600"></div><div style="font-size:10px;color:#22c55e">● 静默监听中</div></div>
+    <span style="width:40px"></span>
+  </div>
+  <div id="watchMsgs"></div>
+</div>
+
+<div id="ovZoom" onclick="this.style.display='none'">
+  <img id="zoomImg" style="max-width:100%;max-height:80vh">
+  <button id="zoomSave" onclick="event.stopPropagation();saveZoom()" style="position:fixed;bottom:40px;left:50%;transform:translateX(-50%);padding:12px 28px;border:none;border-radius:24px;background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;font-size:15px">保存到手机</button>
+</div>
+
+<div id="toast"></div>
+<div id="dlg">
+  <div id="dlgBox">
+    <div id="dlgTitle">提示</div>
+    <div id="dlgMsg"></div>
+    <input id="dlgInput" style="display:none">
+    <div id="dlgBtns">
+      <button id="dlgCancel" style="display:none">取消</button>
+      <button id="dlgOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="mqtt.min.js"></script>
+<script>
+let client=null,myRole='',room='';
+const myCid=localStorage.getItem('gohon_cid')||('c'+Date.now()+Math.random().toString(16).slice(2));
+localStorage.setItem('gohon_cid',myCid);
+
+const SECRET='encry_2026_x9qW';
+function encStr(s){
+  let r='';
+  for(let i=0;i<s.length;i++)r+=String.fromCharCode(s.charCodeAt(i)^SECRET.charCodeAt(i%SECRET.length));
+  return btoa(unescape(encodeURIComponent(r)));
+}
+function decStr(s){
+  try{
+    const raw=decodeURIComponent(escape(atob(s)));
+    let r='';
+    for(let i=0;i<raw.length;i++)r+=String.fromCharCode(raw.charCodeAt(i)^SECRET.charCodeAt(i%SECRET.length));
+    return r;
+  }catch(e){return s}
+}
+function encMsg(m){
+  if(m.type==='text'&&m.text&&!m.e){m.text=encStr(m.text);m.e=1}
+  return m;
+}
+function decMsg(m){
+  if(m.type==='text'&&m.e&&m.text){m.text=decStr(m.text);delete m.e}
+  return m;
+}
+
+// ===== 敏感词过滤（发送拦截+接收兜底）=====
+// 政治人物词以Unicode转义存储，避免明文；违法类词明文
+const BLOCK_WORDS=[
+  '\u4E60\u8FD1\u5E73','\u674E\u514B\u5F3A','\u80E1\u9526\u6D9B','\u6E29\u5BB6\u5B9D','\u6C5F\u6CFD\u6C11','\u6731\u956F\u57FA','\u534E\u56FD\u950B','\u90D3\u5C0F\u5E73','\u6BDB\u6CFD\u4E1C','\u5468\u6069\u6765','\u5218\u5C11\u5947','\u6731\u5FB7','\u9648\u4E91','\u674E\u9E4F','\u8D75\u7D2B\u9633',
+  '枪支','手枪','步枪','冲锋枪','弹药','子弹','爆炸物','炸弹','炸药','雷管','走私','毒品','冰毒','海洛因','大麻','摇头丸','吗啡','可卡因','罂粟','制毒','贩毒','吸毒','自杀','自尽','割腕','上吊','跳楼','轻生','他杀','杀人','谋杀','碎尸','分尸','绑架','劫持','嫖娼','卖淫','枪击','枪杀'
+];
+function normalize(t){return (t||'').toLowerCase().replace(/[\s\.\,\!\?，。！？、\u3000]/g,'')}
+function hasBlocked(t){const n=normalize(t);return BLOCK_WORDS.some(w=>n.indexOf(w)>-1)}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity=1;
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,2200);
+}
+let _dlgResolve=null;
+function showDialog({title,msg,input,inputType,okText,cancelText}){
+  return new Promise(res=>{
+    _dlgResolve=res;
+    document.getElementById('dlgTitle').textContent=title||'提示';
+    document.getElementById('dlgMsg').textContent=msg||'';
+    const inp=document.getElementById('dlgInput');
+    if(input!==undefined&&input!==null){
+      inp.style.display='block';
+      inp.type=inputType||'text';
+      inp.value=input;inp.placeholder=input;
+      setTimeout(()=>inp.focus(),100);
+    } else inp.style.display='none';
+    document.getElementById('dlgOk').textContent=okText||'确定';
+    const cc=document.getElementById('dlgCancel');
+    if(cancelText){cc.style.display='block';cc.textContent=cancelText}
+    else cc.style.display='none';
+    document.getElementById('dlg').style.display='flex';
+  });
+}
+document.getElementById('dlgOk').onclick=()=>{
+  const inp=document.getElementById('dlgInput');
+  const v=inp.style.display==='none'?true:inp.value;
+  document.getElementById('dlg').style.display='none';
+  if(_dlgResolve){_dlgResolve(v);_dlgResolve=null}
+};
+document.getElementById('dlgCancel').onclick=()=>{
+  document.getElementById('dlg').style.display='none';
+  if(_dlgResolve){_dlgResolve(null);_dlgResolve=null}
+};
+localStorage.setItem('gohon_cid',myCid);
+const av={'宝贝':'👧','亲爱的':'👦'};
+const seen=new Set(); let lock=false,recording=false,superMode=false;
+let curAudio=null;
+
+function toggleSuper(){
+  superMode=!superMode;
+  const b=document.getElementById('superBtn');
+  b.classList.toggle('super-on',superMode);
+  if(superMode) toast('超级语音已开启，对方将强制播放');
+}
+const PLUS_SVG=`<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>`;
+const CLOSE_SVG=`<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`;
+function toggleTools(){
+  const tb=document.getElementById('toolBar');
+  const open=tb.style.display!=='flex';
+  tb.style.display=open?'flex':'none';
+  document.getElementById('plusIco').innerHTML=open?CLOSE_SVG:PLUS_SVG;
+}
+
+function enter(){
+  // 首次使用必须先签署用户协议
+  if(!localStorage.getItem('gohon_agreed')){
+    document.getElementById('agreePage').style.display='flex';
+    return;
+  }
+  room=document.getElementById('roomInput').value;
+  myRole=document.getElementById('roleInput').value||'宝贝';
+  if(!room){toast('请输入房间号');return;}
+  if(!myRole){toast('请输入你的名字');return;}
+  // 管理员入口：房间号 1234 且名字为管理员密码 → 直接进入监管中心
+  if(room==='1234' && myRole===ADMIN_PWD){
+    openAdmin();
+    return;
+  }
+  // 先验证房间占用：一个房间只允许两人
+  document.getElementById('gate').querySelector('button').textContent='验证中…';
+  document.getElementById('gate').querySelector('button').disabled=true;
+  let c=null;
+  try{c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_chk_'+Date.now(),clean:true})}catch(e){}
+  let done=false;
+  function proceed(data){
+    if(done)return;done=true;
+    try{c.end()}catch(e){}
+    resetGateBtn();
+    data=data||{users:{},ban:[],rooms:{}};
+    data.rooms=data.rooms||{};data.ban=data.ban||[];
+    if(data.killed){
+      toast('⚠️ 该版本已停用，无法继续使用');
+      setTimeout(()=>{if(window.NativeSave)window.NativeSave.closeApp()},1200);
+      return;
+    }
+    if(data.ban.includes(myCid)){toast('此账号已被管理员销户');localStorage.clear();setTimeout(()=>location.reload(),800);return}
+    // 保留房间：仅原房间两人可再次进入，其他人不可进入/新建
+    if(data.keep&&data.keep[room]&&!data.keep[room].includes(myCid)){
+      toast('该房间号已被原用户保留，无法进入');return;
+    }
+    // 清空标记：此前有人选择不保留清空了历史，本地缓存一并清除
+    if(data.wipe&&data.wipe[room]){
+      try{localStorage.removeItem('gohon_hist_'+room)}catch(e){}
+      delete data.wipe[room];
+    }
+    const occupants=data.rooms[room]||[];
+    if(occupants.length>=2 && !occupants.includes(myCid)){
+      toast('该房间号已被占用，请换一个');return;
+    }
+    if(!occupants.includes(myCid)) occupants.push(myCid);
+    data.rooms[room]=occupants.slice(0,2);
+    data.users=data.users||{};
+    data.users[myCid]={name:myRole,room:room,ts:Date.now()};
+    // 异步写回注册表
+    const wc=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_wr_'+Date.now(),clean:true});
+    wc.on('connect',()=>{wc.publish(REGISTRY_TOPIC,JSON.stringify(data),{qos:1,retain:true});setTimeout(()=>{try{wc.end()}catch(e){}},800)});
+    regData=data;
+    doEnter();
+  }
+  if(c){
+    c.on('connect',()=>{try{c.subscribe(REGISTRY_TOPIC,{qos:1})}catch(e){}});
+    c.on('message',(t,p)=>{
+      try{proceed(JSON.parse(p.toString()))}catch(e){proceed(null)}
+    });
+  }
+  // 无论连接是否成功，2 秒后都继续（避免一直卡在验证中）
+  setTimeout(()=>proceed(null),2000);
+  setTimeout(()=>{if(!done){done=true;try{if(c)c.end()}catch(e){}toast('网络超时，请重试');resetGateBtn()}},6000);
+}
+function resetGateBtn(){
+  const b=document.getElementById('gate').querySelector('button');
+  b.textContent='进入';b.disabled=false;
+}
+
+/* 用户协议 */
+document.getElementById('agreeGo').onclick=()=>{
+  if(!document.getElementById('agreeChk').checked){toast('请先勾选同意协议');return}
+  localStorage.setItem('gohon_agreed','1');
+  document.getElementById('agreePage').style.display='none';
+  enter();
+};
+document.getElementById('agreeExit').onclick=()=>{
+  if(window.NativeSave){window.NativeSave.closeApp()}
+  else {document.getElementById('agreePage').style.display='none';alert('不同意协议将退出软件')}
+};
+function doEnter(){
+  hiddenMode=false;fakeMode=false;document.body.classList.remove('msgs-hidden');
+  localStorage.setItem('gohon_room',room);
+  localStorage.setItem('gohon_role',myRole);
+  localStorage.setItem('gohon_name_'+room,myRole);
+  // 进房前清空消息列表与去重集合，防止上次退出残留的 DOM 导致历史显示两次
+  document.getElementById('msgs').innerHTML='';
+  seen.clear();
+  document.getElementById('gate').style.display='none';
+  document.getElementById('chat').style.display='flex';
+  // 进房时立即显示对方名字（若对方已在线）
+  {
+    const occ=(regData&&regData.rooms&&regData.rooms[room])||[];
+    const other=occ.find(x=>x&&x!==myCid);
+    document.getElementById('partner').textContent=(other&&regData.users&&regData.users[other]&&regData.users[other].name)||'Encry';
+  }
+  loadHist(); connect(); autoSummit(); scheduleAI();
+  if(window.NativeSuper){try{window.NativeSuper.startSuper(room,myCid);window.NativeSuper.setMute(mutedSuper)}catch(e){}}
+  // 首次进入提示保活
+  if(!localStorage.getItem('gohon_keep_tip')){
+    localStorage.setItem('gohon_keep_tip','1');
+    setTimeout(()=>toast('💡 请把 EncryChat 加入后台白名单，否则超级语音可能收不到'),2500);
+  }
+}
+function backToGate(){
+  const r=room;
+  (async()=>{
+    let keep=false;
+    if(r){
+      const v=await showDialog({title:'退出房间',msg:'是否保留该房间号？保留后仅你与对方两人可再次进入',okText:'保留',cancelText:'不保留'});
+      keep=(v===true);
+    }
+    leaveRoom(keep);
+    hiddenMode=false;fakeMode=false;document.body.classList.remove('msgs-hidden');
+    if(client){try{client.end()}catch(e){}}
+    document.getElementById('chat').style.display='none';
+    document.getElementById('gate').style.display='flex';
+    document.getElementById('roomInput').value=localStorage.getItem('gohon_room')||'';
+    document.getElementById('roleInput').value=localStorage.getItem('gohon_role')||'';
+  })();
+}
+// 离开房间：keep=true 时房间号保留给原两人；否则两人都离开后释放并清空历史
+function leaveRoom(keep){
+  const r=room; if(!r)return;
+  stopAI();
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_leave_'+Date.now(),clean:true});
+  let done=false;
+  function finish(data){
+    if(done)return;done=true;
+    try{
+      data=data||{users:{},ban:[],rooms:{}};
+      data.rooms=data.rooms||{};data.users=data.users||{};
+      const members=data.rooms[r]||[];
+      const occ=members.filter(x=>x!==myCid);
+      if(keep){
+        // 保留房间号：白名单锁定原两人，房间不释放、历史不清空
+        data.keep=data.keep||{};
+        const old=data.keep[r]||[];
+        const list=[...new Set([...old,...members,myCid])].slice(0,2);
+        data.keep[r]=list;
+        data.rooms[r]=occ;
+      }else{
+        // 不保留：清除白名单 + 清空双方云端与本地历史，确保后续使用者看不到旧记录
+        data.keep=data.keep||{};
+        delete data.keep[r];
+        try{localStorage.removeItem('gohon_hist_'+r)}catch(e){}
+        try{c.publish('gohon/hist/'+r,'',{qos:1,retain:true})}catch(e){}
+        try{c.publish('gohon/chat/'+r,JSON.stringify({type:'wipe',ts:Date.now()}),{qos:1})}catch(e){}
+        data.wipe=data.wipe||{};
+        data.wipe[r]=1;
+        if(occ.length){
+          data.rooms[r]=occ;
+        }else{
+          // 两人都已离开：释放房间号
+          delete data.rooms[r];
+        }
+      }
+      if(data.users[myCid])data.users[myCid].room='';
+      try{c.publish(REGISTRY_TOPIC,JSON.stringify(data),{qos:1,retain:true})}catch(e){}
+      setTimeout(()=>{try{c.end()}catch(e){}},600);
+    }catch(e){try{c.end()}catch(e2){}}
+  }
+  c.on('connect',()=>{c.subscribe(REGISTRY_TOPIC,{qos:1})});
+  c.on('message',(t,p)=>{try{finish(JSON.parse(p.toString()))}catch(e){finish(null)}});
+  setTimeout(()=>finish(null),2000);
+}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function fmt(ts){const d=new Date(ts);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')}
+
+function waveBars(){
+  let h='';
+  for(let i=0;i<10;i++){const bh=6+Math.round(Math.random()*14);h+=`<i style="height:${bh}px;animation-delay:${i*0.08}s"></i>`}
+  return h;
+}
+
+function dayLabel(ts){
+  const d=new Date(ts),n=new Date();
+  const is=(x,y)=>x.getFullYear()===y.getFullYear()&&x.getMonth()===y.getMonth()&&x.getDate()===y.getDate();
+  const y=new Date(n);y.setDate(n.getDate()-1);
+  if(is(d,n))return '今天';
+  if(is(d,y))return '昨天';
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
+function addRow(m){
+  const wrap=document.createElement('div');
+  const mine=m.cid===myCid;
+  wrap.className='row '+(mine?'me':'ot');
+  let inner='';
+  // 解密保护（fakeMode）：仅伪装进入此状态之前的历史消息；之后新发的消息正常显示，
+  // 避免输入框与气泡内容不一致而暴露
+  if(fakeMode && m.ts < fakeSince){
+    // 伪正常模式：显示正常对话样式的替代内容，绝不泄露真实消息
+    if(m.type==='image') inner='<div style="width:190px;height:130px;border-radius:14px;background:#2c2440;display:flex;align-items:center;justify-content:center;color:#a78bca;font-size:13px">[图片]</div>';
+    else if(m.type==='audio') inner='<div style="padding:14px 16px;color:#a78bca;font-size:13px">[语音]</div>';
+    else if(m.type==='file') inner='<div style="padding:14px 16px;color:#a78bca;font-size:13px">[文件]</div>';
+    else inner=`<span style="font-size:14px">${esc(fakeTextFor(m.id))}</span>`;
+  } else if(m.type==='image'){
+    inner=m.data?`<img src="${m.data}">`:'<div style="padding:14px;color:var(--muted);font-size:13px">[图片]</div>';
+  } else if(m.type==='audio'){
+    inner=m.data?`<div class="voice" data-audio="${m.id}">
+      <div class="play">▶</div>
+      <div class="waves">${waveBars()}</div>
+      <div class="dur">${m.dur?Math.round(m.dur)+'"':'…'}</div>
+    </div>`:`<div style="padding:14px;color:var(--muted);font-size:13px">🎤 [语音${m.dur?Math.round(m.dur)+'"':''}]</div>`;
+    if(m.text)inner+=`<div class="vt">${esc(m.text)}</div>`;
+    else if(m.data)inner+=`<div class="vtBtn" onclick="event.stopPropagation();asrThis('${m.id}')">转文字</div>`;
+  } else if(m.type==='file'){
+    inner=m.data?`<a class="fileMsg" href="${m.data}" download="${esc(m.name||'file')}">
+      <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="fn">${esc(m.name||'文件')}</div></a>`:`<div style="padding:14px;color:var(--muted);font-size:13px">📎 [${esc(m.name||'文件')}]</div>`;
+  } else {
+    inner=esc(m.text||'');
+  }
+  inner+=`<span class="t">${fmt(m.ts)}</span>`;
+  wrap.innerHTML=`<div class="av">${av[m.sender]||'🪐'}</div><div class="b">${inner}</div>`;
+  if(!mine && m.sender){document.getElementById('partner').textContent=m.sender}
+  if(m.type==='audio'&&!fakeMode){
+    const vc=wrap.querySelector('.voice');
+    if(vc)vc.addEventListener('click',()=>togglePlay(vc,m.data));
+    if(!m.dur){
+      const au=new Audio(m.data);
+      au.addEventListener('loadedmetadata',()=>{
+        m.dur=Math.round(au.duration);
+        const d=wrap.querySelector('.dur');if(d)d.textContent=m.dur+'"';
+        saveLocal(m);
+      });
+    }
+  }
+  // 日期分隔线
+  const msgs=document.getElementById('msgs');
+  const last=msgs.lastElementChild;
+  if(!last||!last.classList||!last.classList.contains('daymark')){
+    const lbl=dayLabel(m.ts);
+    const lastTs=last&&last._ts?last._ts:0;
+    if(!last||new Date(m.ts).toDateString()!==new Date(lastTs).toDateString()){
+      const dm=document.createElement('div');dm.className='daymark';dm.textContent=lbl;msgs.appendChild(dm);
+    }
+  }
+  wrap._ts=m.ts;
+  msgs.appendChild(wrap);
+  msgs.scrollTop=1e9;
+}
+
+function togglePlay(vc,src){
+  if(curAudio){curAudio.pause();
+    document.querySelectorAll('.voice.playing').forEach(v=>v.classList.remove('playing'));
+    document.querySelectorAll('.voice .play').forEach(p=>p.textContent='▶');
+  }
+  if(curAudio && curAudio._vc===vc){curAudio=null;return}
+  const a=new Audio(src); a._vc=vc;
+  a.play();
+  vc.classList.add('playing');
+  vc.querySelector('.play').textContent='⏸';
+  a.onended=()=>{vc.classList.remove('playing');vc.querySelector('.play').textContent='▶';curAudio=null};
+  curAudio=a;
+}
+// 对收到的语音做转文字
+function asrThis(id){
+  const m=allHist().find(x=>x.id===id);
+  if(!m||!m.data){toast('没有该语音数据');return}
+  if(!window.NativeAsr){toast('此设备不支持');return}
+  toast('识别中…');
+  const btn=document.querySelector(`[data-audio="${id}"]`)?.nextElementSibling;
+  if(btn&&btn.classList&&btn.classList.contains('vtBtn'))btn.textContent='识别中…';
+  window._asrMsgId=id;
+  window.NativeAsr.asrFile(m.data);
+}
+window.onAsrText=(txt,err)=>{
+  if(err){toast(err||'识别失败');return}
+  if(!txt){toast('没听清，换个环境试试');return}
+  const id=window._asrMsgId;
+  if(id){
+    const h=allHist();
+    const m=h.find(x=>x.id===id);
+    if(m){m.text=txt;try{localStorage.setItem('gohon_hist_'+room,JSON.stringify(h.slice(-150)))}catch(e){}}
+    const vc=document.querySelector(`[data-audio="${id}"]`);
+    if(vc){
+      const vt=document.createElement('div');vt.className='vt';vt.textContent=txt;
+      const btn=vc.nextElementSibling;
+      if(btn&&btn.classList&&btn.classList.contains('vtBtn'))btn.replaceWith(vt);
+      else vc.after(vt);
+    }
+  }
+  toast('已转成文字');
+};
+
+function loadHist(){(JSON.parse(localStorage.getItem('gohon_hist_'+room)||'[]')).slice(-80).forEach(m=>{seen.add(m.id);addRow(m);if(m._placeholder||(m.type!=='text'&&!m.data))pullMedia(m.id)})}
+// 本地历史存储：大媒体超限时自动精简为占位，不阻塞发送
+function saveLocal(m){
+  try{
+    const h=JSON.parse(localStorage.getItem('gohon_hist_'+room)||'[]');
+    h.push(m);
+    localStorage.setItem('gohon_hist_'+room,JSON.stringify(h.slice(-150)));
+  }catch(e){
+    try{
+      const slim=x=>(x.data&&x.data.length>100000)?{id:x.id,sender:x.sender,cid:x.cid,ts:x.ts,type:x.type,name:x.name,dur:x.dur,_placeholder:true}:x;
+      const h=JSON.parse(localStorage.getItem('gohon_hist_'+room)||'[]').map(slim);
+      h.push(slim(m));
+      localStorage.setItem('gohon_hist_'+room,JSON.stringify(h.slice(-120)));
+    }catch(e2){}
+  }
+}
+function allHist(){return JSON.parse(localStorage.getItem('gohon_hist_'+room)||'[]')}
+
+/* ===== 大消息分片重组 & 离线补拉 ===== */
+const _chunks={};
+function handleChunk(m){
+  const ch=_chunks[m.msgId]||{total:m.total,parts:{}};
+  ch.total=m.total;ch.parts[m.seq]=m.part;
+  _chunks[m.msgId]=ch;
+  let filled=0;for(let i=0;i<ch.total;i++)if(ch.parts[i])filled++;
+  if(ch.total>0&&filled>=ch.total){
+    delete _chunks[m.msgId];
+    try{
+      const full=JSON.parse(Array.from({length:ch.total},(_,i)=>ch.parts[i]).join(''));
+      // 已实时收齐，清理云端分片
+      for(let i=0;i<ch.total;i++){try{client.publish('gohon/file/'+m.msgId+'/'+i,'',{qos:1,retain:true})}catch(e){}}
+      // 走正常消息处理
+      if(full.cid&&full.cid!==myCid&&!String(full.cid).startsWith('ai_'))stopAI();
+      if(full.type==='text'&&full.text)full.text=decStr(full.text);
+      if(full.type==='text'&&full.text&&hasBlocked(full.text)){
+        full.text='⛔ 该消息含敏感内容，已被屏蔽';full.blocked=true;
+      }
+      if(!full.id||seen.has(full.id))return;
+      seen.add(full.id);addRow(full);saveLocal(full);pushHist();
+    }catch(e){}
+  }
+}
+const _pulling={};
+function pullMedia(ref){
+  if(!ref||_pulling[ref])return;_pulling[ref]=true;
+  const tmp=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_pull_'+Date.now()+'_'+Math.floor(Math.random()*9999),clean:true});
+  const parts={};let total=0,done=false;
+  tmp.on('connect',()=>{try{tmp.subscribe('gohon/file/'+ref+'/+',{qos:1})}catch(e){}});
+  tmp.on('message',(t,p)=>{
+    try{
+      const ch=JSON.parse(p.toString());
+      if(!ch||ch.type!=='chunk'||ch.msgId!==ref)return;
+      total=ch.total;parts[ch.seq]=ch.part;
+      let filled=0;for(let i=0;i<total;i++)if(parts[i])filled++;
+      if(total>0&&filled>=total&&!done){
+        done=true;
+        try{
+          const full=JSON.parse(Array.from({length:total},(_,i)=>parts[i]).join(''));
+          if(full.type==='text'&&full.text)full.text=decStr(full.text);
+          try{
+            const h=allHist().map(x=>x.id===full.id?full:x);
+            localStorage.setItem('gohon_hist_'+room,JSON.stringify(h.slice(-150)));
+          }catch(e){}
+          if(full.id&&!seen.has(full.id))seen.add(full.id);
+          renderAll();
+          // 清理云端分片
+          for(let i=0;i<total;i++){try{tmp.publish('gohon/file/'+ref+'/'+i,'',{qos:1,retain:true})}catch(e){}}
+        }catch(e){}
+        setTimeout(()=>{try{tmp.end()}catch(e){}},800);
+      }
+    }catch(e){}
+  });
+  tmp.on('error',()=>{try{tmp.end()}catch(e){}});
+  setTimeout(()=>{delete _pulling[ref];try{tmp.end()}catch(e){}},20000);
+}
+
+let reconnectCount=0;
+function connect(){
+  document.getElementById('conn').textContent='● 连接中…';
+  const topic='gohon/chat/'+room;
+  const histTopic='gohon/hist/'+room;
+  client=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{
+    clientId:'gohon_'+myCid,
+    clean:false,
+    keepalive:60,
+    reconnectPeriod:3000,
+    connectTimeout:8000
+  });
+  client.on('connect',()=>{
+    reconnectCount=0;
+    document.getElementById('conn').textContent='● 在线';
+    client.subscribe(topic,{qos:1});
+    client.subscribe(histTopic,{qos:1});
+    client.subscribe(REGISTRY_TOPIC,{qos:1});
+    client.subscribe(UPDATE_TOPIC,{qos:1});
+    _doPushHist();
+  });
+  client.on('message',(t,p)=>{
+    try{
+      const m=JSON.parse(p.toString());
+      // 大消息分片：聚合重组
+      if(m.type==='chunk'){handleChunk(m);return;}
+      if(t===UPDATE_TOPIC&&m&&m.type==='upd'&&m.k===UPDATE_KEY&&m.v&&m.html){
+        // MQTT 推送通道：版本不同则走统一弹窗更新流程
+        if(String(m.v)!==APP_VERSION){
+          promptUpdate(String(m.v),()=>Promise.resolve(m.html));
+        }
+        return;
+      }
+      if(t===REGISTRY_TOPIC){
+        // 版本停用检测：管理员停用后所有注册用户立即退出
+        if(m.killed){
+          toast('⚠️ 该版本已停用，请联系管理员获取新版本');
+          setTimeout(()=>{if(window.NativeSave)window.NativeSave.closeApp()},1500);
+        }
+        // 同步全量注册表，并刷新对方名字
+        regData=m;
+        if(!regData.aiChat)stopAI();
+        if(room&&regData.rooms&&regData.rooms[room]){
+          const other=(regData.rooms[room]||[]).find(x=>x&&x!==myCid);
+          if(other&&regData.users&&regData.users[other]&&regData.users[other].name){
+            document.getElementById('partner').textContent=regData.users[other].name;
+          }
+        }
+        return;
+      }
+      // 收到清空指令：对方选择不保留，清空本地与界面历史
+      if(m.type==='wipe'){
+        try{localStorage.removeItem('gohon_hist_'+room)}catch(e){}
+        document.getElementById('msgs').innerHTML='';
+        toast('对话记录已清空');
+        return;
+      }
+      if(t===histTopic && m.type==='sync'){
+        // 有人进入房间（同步历史），真人到来，AI 静默退出
+        stopAI();
+        const local=allHist();
+        const localIds=new Set(local.map(x=>x.id));
+        let added=0;
+        (m.msgs||[]).forEach(rm=>{
+          decMsg(rm);
+          if(!localIds.has(rm.id)&&!seen.has(rm.id)){seen.add(rm.id);addRow(rm);local.push(rm);added++}
+          if(rm._placeholder||(rm.type!=='text'&&!rm.data))pullMedia(rm.id);
+        });
+        try{localStorage.setItem('gohon_hist_'+room,JSON.stringify(local.slice(-150)))}catch(e){}
+        if(added>0) pushHist();
+        return;
+      }
+      // 真人消息进入房间 → AI 静默退出，把位置让给真人
+      if(m.cid&&m.cid!==myCid&&!String(m.cid).startsWith('ai_')) stopAI();
+      if(!m.id||seen.has(m.id))return;
+      decMsg(m);
+      if(m.type==='text'&&m.text&&hasBlocked(m.text)){
+        m.text='⛔ 该消息含敏感内容，已被屏蔽';m.blocked=true;
+      }
+      seen.add(m.id);addRow(m);saveLocal(m);pushHist();
+    }catch(e){}
+  });
+  client.on('reconnect',()=>{reconnectCount++;document.getElementById('conn').textContent='● 重连中…'});
+  client.on('error',()=>{});
+  client.on('close',()=>{document.getElementById('conn').textContent='● 重连中…'});
+  window._topic=topic; window._histTopic=histTopic;
+}
+// 把最近80条历史作为retained历史同步（媒体消息base64太大，截断成占位以保留时间线）
+// 节流：多条消息合并在3秒内只发一次，避免每条消息都重发整包历史造成卡顿
+let _histTimer=null,_histDirty=false;
+function pushHist(){
+  if(!client||!window._histTopic)return;
+  if(_histTimer){_histDirty=true;return}
+  _histTimer=setTimeout(()=>{
+    _histTimer=null;
+    _doPushHist();
+    if(_histDirty){_histDirty=false;pushHist()}
+  },3000);
+}
+function _doPushHist(){
+  if(!client||!window._histTopic)return;
+  const h=allHist().slice(-80).map(m=>{
+    if((m.type==='image'||m.type==='audio'||m.type==='file')&&m.data&&m.data.length>2000){
+      return {id:m.id,sender:m.sender,cid:m.cid,ts:m.ts,type:m.type,name:m.name,dur:m.dur,_placeholder:true};
+    }
+    return m;
+  });
+  try{client.publish(window._histTopic,JSON.stringify({type:'sync',msgs:h}),{qos:1,retain:true})}catch(e){}
+}
+function newMsg(ex){return Object.assign({id:'m'+Date.now()+'_'+Math.random().toString(16).slice(2,7),sender:myRole,cid:myCid,ts:Date.now(),type:'text'},ex)}
+function publish(m){
+  encMsg(m);
+  seen.add(m.id);
+  const s=JSON.stringify(m);
+  if(s.length>200000){
+    // 大消息（大图/大文件）自动分片：实测 broker 单条约 200KB 安全，更大的会被丢弃
+    const total=Math.ceil(s.length/200000);
+    for(let i=0;i<total;i++){
+      const part=s.slice(i*200000,(i+1)*200000);
+      const chunk=JSON.stringify({type:'chunk',msgId:m.id,total,seq:i,part});
+      try{client.publish(window._topic,chunk,{qos:1})}catch(e){}
+      try{client.publish('gohon/file/'+m.id+'/'+i,chunk,{qos:1,retain:true})}catch(e){}
+    }
+  }else{
+    client.publish(window._topic,s,{qos:1});
+  }
+  decMsg(m); // 本地展示解密后的明文
+  addRow(m);saveLocal(m);pushHist()
+}
+function send(){
+  if(lock)return;const inp=document.getElementById('input');const t=inp.value.trim();
+  if(!t||!client)return;
+  if(hasBlocked(t)){toast('⛔ 该消息含敏感内容，已被拦截');return}
+  lock=true;setTimeout(()=>lock=false,350);inp.value='';
+  publish(newMsg({text:t}));
+}
+document.getElementById('input').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send()}});
+
+function pickImage(){document.getElementById('imgPicker').click()}
+document.getElementById('imgPicker').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const img=new Image();
+  img.onload=()=>{
+    try{
+      // 图片不设大小限制：高清发送（长边最大4096），超过分片上限自动分片
+      const maxW=4096;let w=img.width,h=img.height;
+      if(w>maxW){h=h*maxW/w;w=maxW}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      publish(newMsg({type:'image',data:c.toDataURL('image/jpeg',0.8)}));
+    }catch(err){toast('图片处理失败，请重试')}
+  };
+  img.onerror=()=>toast('图片读取失败');
+  img.src=URL.createObjectURL(f);e.target.value='';
+});
+function pickFile(){document.getElementById('filePicker').click()}
+document.getElementById('filePicker').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  // 文件大小不做限制，超大文件自动分片传输
+  if(f.size>50*1024*1024)toast('文件较大，传输可能需要较长时间');
+  const fr=new FileReader();fr.onload=()=>publish(newMsg({type:'file',name:f.name,data:fr.result}));fr.readAsDataURL(f);e.target.value='';
+});
+
+const MIC_SVG=`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>`;
+const STOP_SVG=`<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
+function toggleRec(){
+  const btn=document.getElementById('recBtn');
+  if(recording){recording=false;btn.classList.remove('rec');btn.innerHTML=MIC_SVG;window.NativeRec.stopRec();return}
+  if(!window.NativeRec){toast('原生录音不可用');return}
+  recording=true;btn.classList.add('rec');btn.innerHTML=STOP_SVG;
+  window.NativeRec.startRec();
+}
+let _recText=null;
+window.onRecText=(txt)=>{_recText=txt};
+window.onRecData=(dataUrl)=>{
+  recording=false;const b=document.getElementById('recBtn');b.classList.remove('rec');b.innerHTML=MIC_SVG;
+  const ex={type:'audio',data:dataUrl};
+  if(superMode)ex.super=true;
+  if(_recText&&_recText.trim())ex.text=_recText.trim();
+  _recText=null;
+  publish(newMsg(ex));
+};
+window.onRecError=(msg)=>{
+  recording=false;const b=document.getElementById('recBtn');b.classList.remove('rec');b.innerHTML=MIC_SVG;
+  toast('录音失败：'+msg);
+};
+
+function inRange(ts,r){const n=new Date(),s=new Date(n);
+  if(r==='today'){s.setHours(0,0,0,0);return ts>=s.getTime()}
+  if(r==='week'){const d=(n.getDay()+6)%7;s.setDate(n.getDate()-d);s.setHours(0,0,0,0);return ts>=s.getTime()}
+  if(r==='month'){s.setDate(1);s.setHours(0,0,0,0);return ts>=s.getTime()}
+  return true;
+}
+function summarize(r){
+  const h=allHist().filter(m=>inRange(m.ts,r)&&m.type==='text');
+  if(h.length<2)return{empty:true};
+  const me=h.filter(m=>m.cid===myCid).length,other=h.length-me;
+  const names=[...new Set(h.map(m=>m.sender))];
+  const hours=new Array(24).fill(0);h.forEach(m=>hours[new Date(m.ts).getHours()]++);
+  let peak=0;hours.forEach((v,i)=>{if(v>hours[peak])peak=i});
+  const stop=new Set(['我们','一个','就是','这个','那个','没有','什么','怎么','知道','现在','这样','那样','真的','还是','不是','可以','哈哈','嗯嗯','好的','好吧','一下','因为','所以','但是','不过','然后','还有']);
+  const freq={};h.forEach(m=>{const t=(m.text||'').replace(/[^\u4e00-\u9fa5a-zA-Z]/g,'');for(let i=0;i<t.length-1;i++){const g=t.slice(i,i+2);if(!stop.has(g))freq[g]=(freq[g]||0)+1}});
+  const top=Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5).map(x=>x[0]);
+  const q=h.slice().sort((a,b)=>b.text.length-a.text.length)[0];
+  const rn={today:'今天',week:'本周',month:'本月',all:'从开始'}[r];
+  return{empty:false,h,me,other,names,peak,top,q,rn};
+}
+function renderSummit(r,btn){
+  document.querySelectorAll('#sheet .seg button').forEach(b=>b.classList.remove('on'));if(btn)btn.classList.add('on');
+  const s=summarize(r),bd=document.getElementById('bd');
+  document.getElementById('summitRange').textContent=new Date().toLocaleDateString('zh-CN');
+  if(s.empty){bd.innerHTML='<p style="color:#64748b;text-align:center;padding:20px">这一时段还没聊够～</p>';return}
+  const who=s.me>=s.other?myRole:(s.names.find(n=>n!==myRole)||'TA');
+  let h=`<div class="stat"><div><b>${s.h.length}</b><span>条消息</span></div><div><b>${s.me}</b><span>我</span></div><div><b>${s.other}</b><span>TA</span></div></div>`;
+  h+=`<p>💬 ${s.rn}一共聊了 <b>${s.h.length}</b> 句，${who}话更多。最活跃时段约 <b>${s.peak}点</b>。</p>`;
+  if(s.top.length)h+=`<p>🔑 高频词：<b>${s.top.join('、')}</b></p>`;
+  if(s.q&&s.q.text.length>6)h+=`<div class="quote">"${esc(s.q.text)}"<br><span style="font-size:11px;color:#64748b">—— ${s.q.sender}</span></div>`;
+  h+=`<p style="color:#fbbf24">💗 每一句都算数。</p>`;
+  bd.innerHTML=h;
+}
+function openSummit(){document.getElementById('ov').style.display='flex';renderSummit('today',document.querySelector('#sheet .seg button'))}
+function closeSummit(){document.getElementById('ov').style.display='none'}
+
+function openSettings(){renderSettings();document.getElementById('ovSet').style.display='flex'}
+function closeSettings(){document.getElementById('ovSet').style.display='none'}
+let mutedSuper=localStorage.getItem('gohon_mute_super')==='1';
+function renderSettings(){
+  const box=document.getElementById('setList');
+  box.innerHTML=`
+    <div class="setItem"><div><div class="lbl">暂停超级语音接收</div><div class="desc">开启后对方的超级语音不会自动播放/响铃，重要场合不尴尬</div></div><div class="sw ${mutedSuper?'on':''}" onclick="toggleMuteSuper()"></div></div>
+    <div class="setItem"><div><div class="lbl">清空本地聊天记录</div><div class="desc">仅清除本机缓存，不影响对方</div></div><div class="sw" onclick="clearHist()" style="background:#ef4444"><span style="color:#fff;font-size:12px;padding:0 12px">清空</span></div></div>
+    <div class="setItem"><div><div class="lbl">当前房间</div><div class="desc">${esc(room)}</div></div></div>
+  `;
+}
+function toggleMuteSuper(){
+  mutedSuper=!mutedSuper;
+  localStorage.setItem('gohon_mute_super',mutedSuper?'1':'0');
+  if(window.NativeSuper){try{window.NativeSuper.setMute(mutedSuper)}catch(e){}}
+  renderSettings();
+}
+async function clearHist(){
+  const ok=await showDialog({title:'清空记录',msg:'确定清空本机所有聊天记录？',okText:'清空',cancelText:'取消'});
+  if(!ok)return;
+  localStorage.removeItem('gohon_hist_'+room);
+  document.getElementById('msgs').innerHTML='';
+  seen.clear();
+  toast('已清空');
+}
+function autoSummit(){
+  const t=new Date().toDateString();
+  if(localStorage.getItem('gohon_last_daily')!==t){
+    const s=summarize('today');
+    if(!s.empty&&s.h.length>=5)setTimeout(()=>{document.getElementById('ov').style.display='flex';renderSummit('today',document.querySelector('#sheet .seg button'))},1500);
+    localStorage.setItem('gohon_last_daily',t);
+  }
+}
+
+if(localStorage.getItem('gohon_room')){
+  document.getElementById('roomInput').value=localStorage.getItem('gohon_room');
+  document.getElementById('roleInput').value=localStorage.getItem('gohon_name_'+localStorage.getItem('gohon_room'))||'';
+}
+// 登录页底部显示当前生效版本，便于确认更新是否已生效
+try{document.getElementById('curVer').textContent='v'+APP_VERSION}catch(e){}
+// 切换房间号时自动填该房间上次用的名字
+document.getElementById('roomInput').addEventListener('change',e=>{
+  const r=e.target.value;
+  if(r)document.getElementById('roleInput').value=localStorage.getItem('gohon_name_'+r)||'';
+});
+
+/* ===== 注册中心 & 管理员 ===== */
+const REGISTRY_TOPIC='gohon/registry';
+const ADMIN_PWD='encry_4n9x_Q2z7!';
+let regData={users:{},ban:[]};
+
+/* ===== 应用内热更新 ===== */
+const APP_VERSION='2.9';
+let _updPrompting=false;
+const UPDATE_TOPIC='gohon/update';const UPDATE_KEY='encry_upd_9xK2!';
+
+// 拉取注册表并更新自己
+function syncRegistry(){
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_reg_'+myCid,clean:true});
+  c.on('connect',()=>{
+    c.subscribe(REGISTRY_TOPIC,{qos:1});
+  });
+  c.on('message',(t,p)=>{
+    try{
+      const data=JSON.parse(p.toString());
+      if(data.users) regData=data;
+      if(data.killed){
+        toast('⚠️ 该版本已停用，请联系管理员获取新版本');
+        setTimeout(()=>{if(window.NativeSave)window.NativeSave.closeApp()},1500);
+        return;
+      }
+    }catch(e){}
+    // 检查 ban
+    if(regData.ban&&regData.ban.includes(myCid)){
+      alert('此账号已被管理员销户');
+      localStorage.clear();
+      location.reload();
+      return;
+    }
+    // 更新自己
+    regData.users=regData.users||{};
+    regData.users[myCid]={name:myRole,room:room,ts:Date.now()};
+    try{c.publish(REGISTRY_TOPIC,JSON.stringify(regData),{qos:1,retain:true})}catch(e){}
+    setTimeout(()=>{try{c.end()}catch(e){}},1000);
+  });
+}
+
+function openAdmin(){
+  document.getElementById('ovAdmin').style.display='flex';
+  const box=document.getElementById('adminList');
+  document.getElementById('adminStats').innerHTML='';
+  box.innerHTML='<p style="color:#a78bca;text-align:center;padding:24px">加载用户列表…</p>';
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_admin_'+Date.now(),clean:true});
+  c.on('connect',()=>c.subscribe(REGISTRY_TOPIC,{qos:1}));
+  c.on('message',(t,p)=>{
+    try{
+      const data=JSON.parse(p.toString());
+      regData=data;
+      const kb=document.getElementById('killBtn');
+      if(kb)kb.textContent=data.killed?'✅ 已停用当前版本（点击恢复）':'停用当前版本';
+      const ab=document.getElementById('aiBtn');
+      if(ab)ab.textContent=data.aiChat?'✅ AI 陪聊已开启（点击关闭）':'AI 陪聊';
+      const users=Object.entries(regData.users||{});
+      const online=users.filter(([,u])=>(Date.now()-(u.ts||0))<5*60*1000).length;
+      const roomN=Object.keys(regData.rooms||{}).length;
+      document.getElementById('adminStats').innerHTML=
+        `<div class="statCard"><div class="n">${online}</div><div class="l">在线</div></div>
+         <div class="statCard"><div class="n">${users.length}</div><div class="l">注册用户</div></div>
+         <div class="statCard"><div class="n">${roomN}</div><div class="l">活跃房间</div></div>`;
+      if(!users.length){box.innerHTML='<p style="color:#a78bca;text-align:center;padding:24px">暂无注册用户</p>';return}
+      box.innerHTML=users.map(([uid,u])=>{
+        const isMe=uid===myCid;
+        const on=(Date.now()-(u.ts||0))<5*60*1000;
+        const ago=Math.round((Date.now()-(u.ts||0))/60000);
+        const meta=on?'在线':(ago<60?ago+'分钟前':'1小时前');
+        return `<div class="adminUser" style="${isMe?'':'cursor:pointer'}" onclick="${isMe?'':`watchUser('${uid}')`}">
+          <div class="av">${esc((u.name||'?').charAt(0))}</div>
+          <div class="info">
+            <div class="nm"><span class="od ${on?'on':'off'}"></span>${esc(u.name||'未命名')}${isMe?'<span style="color:#f472b6;font-size:11px">（我）</span>':''}</div>
+            <div class="meta">${meta} · 房间 ${esc(u.room||'—')}</div>
+          </div>
+          <div class="acts">
+            ${isMe?'':`<button class="w" onclick="event.stopPropagation();watchUser('${uid}')">旁观</button><button class="b" onclick="event.stopPropagation();banUser('${uid}','${esc(u.name||'')}')">销户</button>`}
+          </div>
+        </div>`;
+      }).join('');
+    }catch(e){}
+  });
+  window._adminClient=c;
+}
+function closeAdmin(){
+  document.getElementById('ovAdmin').style.display='none';
+  if(window._adminClient){try{window._adminClient.end()}catch(e){}}
+  stopWatch();
+}
+// 停用/恢复当前版本：停用后所有注册用户无法继续使用
+function toggleKill(){
+  if(!regData.killed){
+    (async()=>{
+      const v=await showDialog({title:'停用当前版本',msg:'停用后所有注册用户将无法继续使用该版本，确定停用？',okText:'确定停用',cancelText:'取消'});
+      if(v===true) doKill(true);
+    })();
+  } else {
+    (async()=>{
+      const v=await showDialog({title:'恢复当前版本',msg:'确定恢复该版本的使用权限？',okText:'恢复',cancelText:'取消'});
+      if(v===true) doKill(false);
+    })();
+  }
+}
+function doKill(k){
+  regData.killed=k;
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_kill_'+Date.now(),clean:true});
+  c.on('connect',()=>{
+    c.publish(REGISTRY_TOPIC,JSON.stringify(regData),{qos:1,retain:true});
+    setTimeout(()=>{try{c.end()}catch(e){}},800);
+  });
+  const kb=document.getElementById('killBtn');
+  if(kb)kb.textContent=k?'✅ 已停用当前版本（点击恢复）':'停用当前版本';
+  toast(k?'已停用当前版本':'已恢复当前版本');
+}
+// AI 陪聊开关：开启后新房间8秒无人进入，AI 自动进入陪聊
+function toggleAI(){
+  const nk=!regData.aiChat;
+  regData.aiChat=nk;
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_ai_'+Date.now(),clean:true});
+  c.on('connect',()=>{
+    c.publish(REGISTRY_TOPIC,JSON.stringify(regData),{qos:1,retain:true});
+    setTimeout(()=>{try{c.end()}catch(e){}},800);
+  });
+  const ab=document.getElementById('aiBtn');
+  if(ab)ab.textContent=nk?'✅ AI 陪聊已开启（点击关闭）':'AI 陪聊';
+  toast(nk?'AI 陪聊已开启':'AI 陪聊已关闭');
+}
+// AI 对聊开关：开启后建房8秒无人进入时由AI自动陪聊，用户不可察觉
+function toggleAI(){
+  const nv=!regData.aiChat;
+  regData.aiChat=nv;
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_ai_cfg_'+Date.now(),clean:true});
+  c.on('connect',()=>{
+    c.publish(REGISTRY_TOPIC,JSON.stringify(regData),{qos:1,retain:true});
+    setTimeout(()=>{try{c.end()}catch(e){}},800);
+  });
+  const ab=document.getElementById('aiBtn');
+  if(ab)ab.textContent=nv?'✅ AI 对聊已开启（点击关闭）':'AI 对聊';
+  toast(nv?'AI 对聊已开启':'AI 对聊已关闭');
+}
+
+let _zoomData=null;
+function showZoom(dataUrl){
+  _zoomData=dataUrl;
+  document.getElementById('zoomImg').src=dataUrl;
+  document.getElementById('ovZoom').style.display='flex';
+}
+function saveZoom(){
+  if(_zoomData&&window.NativeSave){
+    window.NativeSave.saveData(_zoomData,'encry_img_'+Date.now()+'.jpg');
+  }
+}
+let _watchArr=[];
+function watchUser(uid){
+  const u=(regData.users||{})[uid];
+  if(!u||!u.room)return;
+  _watchArr=[];
+  document.getElementById('watchTitle').textContent='👁 '+(u.name||'?');
+  document.getElementById('watchMsgs').innerHTML='';
+  document.getElementById('ovWatch').style.display='flex';
+  stopWatch();
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_watch_'+Date.now(),clean:true});
+  c.on('connect',()=>{
+    c.subscribe('gohon/hist/'+u.room,{qos:1});
+    c.subscribe('gohon/chat/'+u.room,{qos:1});
+  });
+  c.on('message',(t,p)=>{
+    try{
+      const m=JSON.parse(p.toString());
+      if(m.type==='sync'){
+        const box=document.getElementById('watchMsgs');
+        box.innerHTML='';
+        (m.msgs||[]).forEach(x=>watchAppend(x));
+        box.scrollTop=box.scrollHeight;
+        return;
+      }
+      watchAppend(m);
+      const box=document.getElementById('watchMsgs');
+      box.scrollTop=box.scrollHeight;
+    }catch(e){}
+  });
+  window._watchClient=c;
+}
+function watchAppend(m){
+  decMsg(m);
+  _watchArr.push(m);
+  const box=document.getElementById('watchMsgs');
+  const mine=m.cid===myCid;
+  const idx=_watchArr.length-1;
+  const row=document.createElement('div');
+  row.className='row '+(mine?'me':'ot');
+  let inner='';
+  if(m.type==='image'&&m.data){
+    inner=`<img src="${m.data}" style="cursor:pointer" data-i="${idx}">`;
+  } else if(m.type==='image'){
+    inner='<div style="padding:14px;color:#a78bca">[图片]</div>';
+  } else if(m.type==='audio'&&m.data){
+    inner=`<div class="voice" data-audio="${idx}">
+      <div class="play">▶</div>
+      <div class="waves">${waveBars()}</div>
+      <div class="dur">${m.dur?Math.round(m.dur)+'"':'…'}</div>
+    </div>`;
+  } else if(m.type==='audio'){
+    inner=`<div style="padding:10px;color:#a78bca">🎤 [语音${m.dur?Math.round(m.dur)+'"':''}]</div>`;
+  } else if(m.type==='file'&&m.data){
+    inner=`<div class="fileMsg" style="cursor:pointer" data-f="${idx}">
+      <div class="fi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="fn">${esc(m.name||'文件')}<br><span style="font-size:10px;opacity:.7">点击保存</span></div></div>`;
+  } else if(m.type==='file'){
+    inner=`<div style="padding:10px;color:#a78bca">📎 ${esc(m.name||'文件')}</div>`;
+  } else {
+    inner=esc(m.text||'');
+  }
+  row.innerHTML=`<div class="av">${esc((m.sender||'?')[0])}</div><div class="b">${inner}<span class="t">${fmt(m.ts)}</span></div>`;
+  const img=row.querySelector('img[data-i]');
+  if(img)img.onclick=()=>showZoom(m.data);
+  const vc=row.querySelector('.voice[data-audio]');
+  if(vc){
+    vc.onclick=()=>toggleWatchAudio(vc,m.data);
+    if(!m.dur){
+      const au=new Audio(m.data);
+      au.addEventListener('loadedmetadata',()=>{m.dur=Math.round(au.duration);vc.querySelector('.dur').textContent=m.dur+'"'});
+    }
+  }
+  const f=row.querySelector('[data-f]');
+  if(f)f.onclick=()=>{if(window.NativeSave)window.NativeSave.saveData(m.data,m.name||('file_'+Date.now()))};
+  box.appendChild(row);
+}
+let _watchAudio=null;
+function toggleWatchAudio(vc,src){
+  if(_watchAudio){_watchAudio.pause();document.querySelectorAll('#watchMsgs .voice.playing').forEach(v=>v.classList.remove('playing'));document.querySelectorAll('#watchMsgs .voice .play').forEach(p=>p.textContent='▶')}
+  if(_watchAudio&&_watchAudio._vc===vc){_watchAudio=null;return}
+  const a=new Audio(src);a._vc=vc;a.play();
+  vc.classList.add('playing');vc.querySelector('.play').textContent='⏸';
+  a.onended=()=>{vc.classList.remove('playing');vc.querySelector('.play').textContent='▶';_watchAudio=null};
+  _watchAudio=a;
+}
+function stopWatch(){if(window._watchClient){try{window._watchClient.end()}catch(e){}window._watchClient=null}}
+function closeWatch(){document.getElementById('ovWatch').style.display='none';stopWatch()}
+
+async function banUser(uid,name){
+  const ok=await showDialog({title:'销户确认',msg:'确定销户 '+name+'？该用户将无法进入房间',okText:'销户',cancelText:'取消'});
+  if(!ok)return;
+  regData.ban=regData.ban||[];
+  if(!regData.ban.includes(uid))regData.ban.push(uid);
+  delete regData.users[uid];
+  const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_ban_'+Date.now(),clean:true});
+  c.on('connect',()=>{
+    c.publish(REGISTRY_TOPIC,JSON.stringify(regData),{qos:1,retain:true});
+    setTimeout(()=>{try{c.end()}catch(e){}},1000);
+    openAdmin();
+  });
+}
+
+/* ===== AI 对聊（管理员开启后，建房8秒无人进自动陪聊，用户不可察觉） ===== */
+const AI_NAMES=['阿澈','小满','林一','小舟','知夏','南乔','予安','星野','陆离','青梧'];
+const AI_GREET=['嗨，刚看到你进来了','来了呀，今天过得怎么样','在呢在呢','嘿，好久不见','刚忙完，正好你在'];
+const AI_CHAT=['确实','哈哈对啊','我也是这么觉得的','刚看了个有意思的东西','周末有什么安排吗','今天天气挺舒服的','你最近忙不忙','我刚吃完午饭','好，那先这样','嗯嗯知道了','说得有道理','我懂你意思','那会儿我也在','改天一起吃饭','你那边呢','挺好的呀','先不说了，晚点聊','行，回头说'];
+let aiClient=null, aiTalking=false;
+function aiReply(text){
+  const t=text||'';
+  if(/在吗|在嘛|在不|hi|hello|嗨|哈喽/i.test(t)) return pick(['在的呀，刚看到消息','在呢，怎么啦','在的，你说']);
+  if(/吃|饿|饭/i.test(t)) return pick(['还没吃呢，你呢','刚吃过，今天吃的火锅','我点了个外卖，待会到']);
+  if(/睡|晚安|困/i.test(t)) return pick(['好呀，晚安','我还不困，再聊会儿','那你早点睡，明天聊']);
+  if(/忙|累|工作|上班|下班|加班/i.test(t)) return pick(['辛苦了，早点休息','我也刚下班，累死了','忙的时候记得喝水']);
+  if(/天气|冷|热|下雨|晴/i.test(t)) return pick(['今天天气确实不错','这边有点凉，你那边呢','听说晚上要下雨，记得带伞']);
+  if(/在哪|哪里|地址|位置/i.test(t)) return pick(['在家呢，你呢','刚出门，在路上了','在公司，还没走']);
+  if(/吗|嘛|呢|？|\?$/.test(t)) return pick(['我觉得挺好的','看情况吧，到时候再说','嗯，我觉得可以']);
+  return pick(AI_CHAT);
+}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function aiSay(name,cid,text){
+  if(!aiClient||!text)return;
+  if(hasBlocked(text))text=pick(AI_CHAT);
+  const m={id:'m'+Date.now()+'_'+Math.random().toString(16).slice(2,7),sender:name,cid:cid,ts:Date.now(),type:'text',text:text};
+  encMsg(m);
+  try{aiClient.publish('gohon/chat/'+room,JSON.stringify(m),{qos:1})}catch(e){}
+}
+function startAI(){
+  if(aiClient||!room)return;
+  const aiName=pick(AI_NAMES);
+  const aiCid='ai_'+room+'_'+Math.random().toString(16).slice(2,6);
+  aiClient=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_ai_'+Date.now(),clean:true});
+  aiClient.on('connect',()=>{
+    aiClient.subscribe('gohon/chat/'+room,{qos:1});
+    // AI 先进来自然打个招呼
+    setTimeout(()=>aiSay(aiName,aiCid,pick(AI_GREET)),1200+Math.random()*1800);
+  });
+  aiClient.on('message',(t,p)=>{
+    try{
+      const m=JSON.parse(p.toString());
+      if(!m||!m.cid||m.cid===aiCid||t!=='gohon/chat/'+room)return;
+      if(m.cid===myCid&&m.type==='text'&&m.text){
+        setTimeout(()=>aiSay(aiName,aiCid,aiReply(m.text)),1000+Math.random()*2600);
+      } else if(m.cid!==myCid&&!String(m.cid).startsWith('ai_')){
+        // 真人进入房间，AI 静默退出
+        stopAI();
+      }
+    }catch(e){}
+  });
+}
+function stopAI(){
+  if(aiClient){try{aiClient.end()}catch(e){}aiClient=null}
+}
+// 建房后8秒检查：房间仍只有自己且管理员已开启AI对聊 → 启动陪聊
+function scheduleAI(){
+  setTimeout(()=>{
+    const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_aichk_'+Date.now(),clean:true});
+    let done=false;
+    function fin(data){
+      if(done)return;done=true;
+      try{c.end()}catch(e){}
+      try{
+        data=data||{};
+        const occ=(data.rooms||{})[room]||[];
+        if(data.aiChat&&occ.length===1&&occ[0]===myCid) startAI();
+      }catch(e){}
+    }
+    c.on('connect',()=>c.subscribe(REGISTRY_TOPIC,{qos:1}));
+    c.on('message',(t,p)=>{try{fin(JSON.parse(p.toString()))}catch(e){fin(null)}});
+    setTimeout(()=>fin(null),2000);
+  },8000);
+}
+
+/* ===== 极速加密模式（双击空白） ===== */
+let _lastTap=0, hiddenMode=false, fakeMode=false, fakeSince=0;
+// 伪正常模式的替代对话内容（普通朋友间的自然聊天，绝不出现真实消息与情侣向表达）
+const FAKE_TEXTS=['今天天气不错呢','在干嘛呀','刚吃完饭','哈哈哈哈','好呀好呀','明天有空吗','晚安啦','今天工作好累','给你看个好玩的东西','记得多喝水','到家了','马上就到','嗯嗯','我也是','晚点聊','等我一下','出去走走吗','周末有空吗','今天开心','辛苦了','早点休息','在忙吗','刚醒','午饭吃了没','下班了吗','最近怎么样','那个视频看了吗','明天记得带东西','改天聚一下','路上小心','好的没问题','收到','笑死我了','真的假的','有点意思','再说吧','先这样','回头聊'];function fakeTextFor(id){
+  let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;
+  return FAKE_TEXTS[h%FAKE_TEXTS.length];
+}
+function renderAll(){
+  const box=document.getElementById('msgs');
+  box.innerHTML='';
+  allHist().forEach(m=>{seen.add(m.id);addRow(m);if(m._placeholder||(m.type!=='text'&&!m.data))pullMedia(m.id)});
+}
+document.getElementById('msgs').addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-_lastTap<300){
+    _lastTap=0;
+    if(hiddenMode){
+      // 加密*号状态：输房间号解锁；输错进入伪正常模式（不泄露真实内容）
+      (async()=>{
+        const v=await showDialog({title:'解除加密',msg:'请输入房间号验证',input:'',okText:'解除',cancelText:'取消'});
+        if(v===room){
+          hiddenMode=false;fakeMode=false;
+          document.body.classList.remove('msgs-hidden');
+          renderAll();
+          toast('已恢复正常');
+        } else if(v!==null&&v!==''){
+          hiddenMode=false;fakeMode=true;fakeSince=Date.now();
+          document.body.classList.remove('msgs-hidden');
+          renderAll();
+          toast('已恢复显示');
+        }
+      })();
+    } else if(fakeMode){
+      // 伪正常模式：再次输入房间号，输对后恢复真实明文
+      (async()=>{
+        const v=await showDialog({title:'解除加密',msg:'请输入房间号验证',input:'',okText:'解除',cancelText:'取消'});
+        if(v===room){
+          fakeMode=false;renderAll();
+          toast('已恢复真实消息');
+        } else if(v!==null&&v!=='')toast('房间号不正确，请重试');
+      })();
+    } else {
+      hiddenMode=true;document.body.classList.add('msgs-hidden');toast('🔒 已进入极速加密模式');
+    }
+  }else _lastTap=now;
+});
+
+/* ===== 应用内热更新：GitHub 拉取式（主）+ MQTT 推送式（辅） ===== */
+const GH_OWNER='xinhuo-08', GH_REPO='GKtry', GH_BRANCH='main';
+const GH_VER_URL='https://cdn.jsdelivr.net/gh/'+GH_OWNER+'/'+GH_REPO+'@'+GH_BRANCH+'/version.json';
+const GH_HTML_URL='https://cdn.jsdelivr.net/gh/'+GH_OWNER+'/'+GH_REPO+'@'+GH_BRANCH+'/index.html';
+const GH_RAW_VER='https://raw.githubusercontent.com/'+GH_OWNER+'/'+GH_REPO+'/'+GH_BRANCH+'/version.json';
+const GH_RAW_HTML='https://raw.githubusercontent.com/'+GH_OWNER+'/'+GH_REPO+'/'+GH_BRANCH+'/index.html';
+
+// 统一弹窗更新流程：确认 → 下载 → 保存 → 提示重启
+async function promptUpdate(v, getHtml){
+  if(_updPrompting)return;
+  _updPrompting=true;
+  try{
+    const ok=await showDialog({title:'发现新版本',msg:'当前 v'+APP_VERSION+'，新版本 v'+v+'。是否立即更新？',okText:'立即更新',cancelText:'稍后'});
+    if(ok){
+      const html=await getHtml();
+      if(html&&html.length>1000&&window.NativeSave&&window.NativeSave.saveHtml){
+        window.NativeSave.saveHtml(html,String(v));
+        localStorage.setItem('gohon_ver',String(v));
+        await showDialog({title:'更新完成',msg:'新版本 v'+v+' 已下载，重启 App 后生效。',okText:'知道了'});
+      }else if(html&&html.length<=1000){
+        toast('下载失败，请稍后重试');
+      }
+    }
+  }catch(e){}
+}
+
+// GitHub 拉取检查：启动时用 HTTPS 下载版本清单（不依赖长连接，稳定）
+function checkGitHubUpdate(){
+  fetch(GH_VER_URL,{cache:'no-store'}).then(r=>r.json()).then(j=>{
+    const v=String(j&&j.v||'');
+    if(v&&v!==APP_VERSION)promptUpdate(v,()=>fetch(GH_HTML_URL,{cache:'no-store'}).then(r=>r.text()));
+  }).catch(()=>{
+    // CDN 失败则改用 GitHub 原始地址重试一次
+    fetch(GH_RAW_VER,{cache:'no-store'}).then(r=>r.json()).then(j=>{
+      const v=String(j&&j.v||'');
+      if(v&&v!==APP_VERSION)promptUpdate(v,()=>fetch(GH_RAW_HTML,{cache:'no-store'}).then(r=>r.text()));
+    }).catch(()=>{});
+  });
+}
+
+/* ===== 启动即检查更新（GitHub 拉取 + MQTT 推送双通道） ===== */
+(function bootCheckUpdate(){
+  try{setTimeout(checkGitHubUpdate,600)}catch(e){}
+  try{
+    const c=mqtt.connect('wss://broker.emqx.io:8084/mqtt',{clientId:'gohon_bootupd_'+Date.now()+'_'+Math.floor(Math.random()*9999),clean:true});
+    let done=false;
+    function apply(m){
+      if(done)return;done=true;
+      try{c.end()}catch(e){}
+      if(m&&m.type==='upd'&&m.k===UPDATE_KEY&&m.v&&m.html&&String(m.v)!==APP_VERSION){
+        promptUpdate(String(m.v),()=>Promise.resolve(m.html));
+      }
+    }
+    c.on('connect',()=>{try{c.subscribe(UPDATE_TOPIC,{qos:1})}catch(e){}});
+    c.on('message',(t,p)=>{
+      if(t!==UPDATE_TOPIC)return;
+      try{apply(JSON.parse(p.toString()))}catch(e){}
+    });
+    c.on('error',()=>{try{c.end()}catch(e){}});
+    setTimeout(()=>{if(!done){try{c.end()}catch(e){}}},8000);
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
